@@ -1,0 +1,120 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: luci-app-olcrtc\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "olcRTC"
+msgstr "olcRTC"
+
+msgid "Client"
+msgstr "Клиент"
+
+msgid "Tunnel"
+msgstr "Туннель"
+
+# --- client.js ---
+
+msgid "olcRTC client"
+msgstr "Клиент olcRTC"
+
+msgid "WebRTC-tunneled SOCKS5 proxy client. Get room_id/key from your server operator."
+msgstr "SOCKS5-клиент, туннелирующий трафик поверх WebRTC. room_id и ключ выдаёт оператор сервера."
+
+msgid "Instance"
+msgstr "Экземпляр"
+
+msgid "Enabled"
+msgstr "Включено"
+
+msgid "Carrier"
+msgstr "Носитель (carrier)"
+
+msgid "Transport"
+msgstr "Транспорт"
+
+msgid "Room ID"
+msgstr "ID комнаты"
+
+msgid "Client ID"
+msgstr "ID клиента"
+
+msgid "Encryption key (hex)"
+msgstr "Ключ шифрования (hex)"
+
+msgid "Egress DNS"
+msgstr "DNS для исходящих запросов"
+
+msgid "SOCKS5 bind host"
+msgstr "Адрес SOCKS5 (bind)"
+
+msgid "SOCKS5 bind port"
+msgstr "Порт SOCKS5 (bind)"
+
+msgid "SOCKS5 username (optional)"
+msgstr "Имя пользователя SOCKS5 (необязательно)"
+
+msgid "SOCKS5 password (optional)"
+msgstr "Пароль SOCKS5 (необязательно)"
+
+# --- tunnel.js ---
+
+msgid "olcRTC TUN bridge"
+msgstr "TUN-мост olcRTC"
+
+msgid "Brings up a TUN interface forwarding packets into the local olcRTC SOCKS5 endpoint."
+msgstr "Поднимает TUN-интерфейс и направляет весь его трафик в локальный SOCKS5 olcRTC."
+
+msgid "TUN interface name"
+msgstr "Имя TUN-интерфейса"
+
+msgid "TUN IPv4 address"
+msgstr "IPv4-адрес TUN"
+
+msgid "TUN IPv4 netmask (CIDR)"
+msgstr "Маска IPv4 TUN (CIDR)"
+
+msgid "MTU"
+msgstr "MTU"
+
+msgid "SOCKS5 upstream host"
+msgstr "Адрес upstream SOCKS5"
+
+msgid "SOCKS5 upstream port"
+msgstr "Порт upstream SOCKS5"
+
+msgid "Log level"
+msgstr "Уровень логирования"
+
+msgid "Auto-route LAN through tunnel"
+msgstr "Автоматически направлять LAN через туннель"
+
+msgid "Adds an ip rule sending packets from LAN bridge to the tunnel routing table on start."
+msgstr "При старте добавляет правило ip rule, отправляющее трафик LAN-моста в таблицу маршрутизации туннеля."
+
+msgid "LAN interface"
+msgstr "LAN-интерфейс"
+
+# --- watchdog (см. ниже, добавится позже в client.js) ---
+
+msgid "Watchdog"
+msgstr "Watchdog"
+
+msgid "Watchdog enabled"
+msgstr "Watchdog включён"
+
+msgid "Restart olcrtc if it cannot reach the probe URL through its own SOCKS5."
+msgstr "Перезапускать olcrtc, если он не может достучаться до проверочного URL через свой собственный SOCKS5."
+
+msgid "Probe URL"
+msgstr "URL для проверки"
+
+msgid "Probe interval (s)"
+msgstr "Период проверки (с)"
+
+msgid "Probe timeout (s)"
+msgstr "Таймаут проверки (с)"
+
+msgid "Consecutive failures before restart"
+msgstr "Подряд неудачных проверок до перезапуска"

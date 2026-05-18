@@ -59,6 +59,24 @@ return view.extend({
 		o = s.option(form.Value, 'socks_pass', _('SOCKS5 password (optional)'));
 		o.password = true;
 
+		// --- Watchdog ---
+		s = m.section(form.NamedSection, 'watchdog', 'watchdog', _('Watchdog'),
+			_('Restart olcrtc if it cannot reach the probe URL through its own SOCKS5.'));
+		s.anonymous = true;
+
+		o = s.option(form.Flag,  'enabled',   _('Watchdog enabled'));
+		o = s.option(form.Value, 'probe_url', _('Probe URL'));
+		o.default = 'https://www.google.com/generate_204';
+		o = s.option(form.Value, 'interval',  _('Probe interval (s)'));
+		o.datatype = 'uinteger';
+		o.default = '30';
+		o = s.option(form.Value, 'timeout',   _('Probe timeout (s)'));
+		o.datatype = 'uinteger';
+		o.default = '10';
+		o = s.option(form.Value, 'max_fails', _('Consecutive failures before restart'));
+		o.datatype = 'uinteger';
+		o.default = '3';
+
 		return m.render();
 	}
 });

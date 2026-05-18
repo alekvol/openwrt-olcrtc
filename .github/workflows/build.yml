@@ -73,6 +73,7 @@ jobs:
           CONFIG_PACKAGE_olcrtc=m
           CONFIG_PACKAGE_olcrtc-tun2socks=m
           CONFIG_PACKAGE_luci-app-olcrtc=m
+          CONFIG_PACKAGE_luci-i18n-olcrtc-ru=m
           CONFIG_PACKAGE_hev-socks5-tunnel=m
           EOF
           make defconfig
@@ -83,11 +84,12 @@ jobs:
           make package/olcrtc/compile         V=s -j$(nproc) || make package/olcrtc/compile         V=s
           make package/olcrtc-tun2socks/compile V=s -j$(nproc) || make package/olcrtc-tun2socks/compile V=s
           make package/luci-app-olcrtc/compile  V=s -j$(nproc) || make package/luci-app-olcrtc/compile  V=s
+          make package/luci-i18n-olcrtc-ru/compile V=s -j$(nproc) || true
 
       - name: Collect ipks
         run: |
           mkdir -p artifacts
-          find sdk/bin -name 'olcrtc*.ipk' -o -name 'luci-app-olcrtc*.ipk' | xargs -I{} cp {} artifacts/
+          find sdk/bin \( -name 'olcrtc*.ipk' -o -name 'luci-app-olcrtc*.ipk' -o -name 'luci-i18n-olcrtc-*.ipk' \) -exec cp {} artifacts/ \;
           ls -la artifacts/
 
       - name: Upload artifacts

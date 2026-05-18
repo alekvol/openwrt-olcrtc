@@ -38,7 +38,7 @@ define Package/olcrtc
   CATEGORY:=Network
   TITLE:=olcRTC WebRTC tunneling client (SOCKS5)
   URL:=https://github.com/openlibrecommunity/olcrtc
-  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle
+  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +curl
 endef
 
 define Package/olcrtc/description
@@ -60,6 +60,9 @@ define Package/olcrtc/install
 
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/olcrtc.config $(1)/etc/config/olcrtc
+
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) ./files/olcrtc-watchdog.sh $(1)/usr/libexec/olcrtc-watchdog.sh
 
 	$(INSTALL_DIR) $(1)/usr/share/olcrtc/data
 endef

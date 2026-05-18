@@ -13,9 +13,10 @@ OpenWrt feed для запуска [olcRTC](https://github.com/openlibrecommunit
 
 | Пакет | Назначение |
 |---|---|
-| `olcrtc` | сам бинарник olcRTC, init-скрипт `procd`, UCI-конфиг `/etc/config/olcrtc` |
+| `olcrtc` | сам бинарник olcRTC, init-скрипт `procd`, UCI-конфиг `/etc/config/olcrtc`, встроенный watchdog |
 | `olcrtc-tun2socks` | поднимает TUN-интерфейс и натравливает его на локальный SOCKS5 от olcrtc (через `hev-socks5-tunnel`) |
 | `luci-app-olcrtc` | веб-морда LuCI для правки UCI-конфигов |
+| `luci-i18n-olcrtc-ru` | русский перевод LuCI-приложения (собирается автоматически вместе с `luci-app-olcrtc`) |
 
 ## Подключение feed
 
@@ -43,8 +44,8 @@ make package/olcrtc/compile V=s
 
 ```
 opkg update
-opkg install olcrtc olcrtc-tun2socks luci-app-olcrtc \
-             hev-socks5-tunnel kmod-tun ca-bundle
+opkg install olcrtc olcrtc-tun2socks luci-app-olcrtc luci-i18n-olcrtc-ru \
+             hev-socks5-tunnel kmod-tun ca-bundle curl
 ```
 
 ## Настройка
@@ -111,6 +112,27 @@ uci commit
 
 Использовать `dnsmasq` + nftables set и заворачивать только нужные
 домены в таблицу 100 (см. `docs/selective.md`).
+
+## Watchdog
+
+Внутри пакета `olcrtc` лежит `/usr/libexec/olcrtc-watchdog.sh`, который
+запускается отдельным procd-инстансом. Он периодически (по умолчанию раз
+в 30 с) дёргает probe-URL через **собственный** SOCKS5 olcrtc и считает
+провалом всё, что не вернуло HTTP 2xx/3xx. После `max_fails` неудач
+подряд — `/etc/init.d/olcrtc restart`.
+
+Включается в `/etc/config/olcrtc`:
+
+```
+config watchdog 'watchdog'
+    option enabled    '1'
+    option probe_url  'https://www.google.com/generate_204'
+    option interval   '30'
+    option timeout    '10'
+    option max_fails  '3'
+```
+
+Логи: `logread -e olcrtc-watchdog`.
 
 ## Ограничения
 
