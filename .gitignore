@@ -1,0 +1,10 @@
+*.ipk
+*.o
+*.swp
+*~
+build_dir/
+staging_dir/
+tmp/
+bin/
+.config*
+!.config.example

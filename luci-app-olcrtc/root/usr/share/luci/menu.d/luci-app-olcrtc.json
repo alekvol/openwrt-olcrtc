@@ -1,0 +1,24 @@
+{
+	"admin/services/olcrtc": {
+		"title": "olcRTC",
+		"order": 60,
+		"action": {
+			"type": "view",
+			"path": "olcrtc/client"
+		},
+		"depends": {
+			"acl": [ "luci-app-olcrtc" ],
+			"uci": { "olcrtc": true }
+		}
+	},
+	"admin/services/olcrtc/client": {
+		"title": "Client",
+		"order": 10,
+		"action": { "type": "view", "path": "olcrtc/client" }
+	},
+	"admin/services/olcrtc/tunnel": {
+		"title": "Tunnel",
+		"order": 20,
+		"action": { "type": "view", "path": "olcrtc/tunnel" }
+	}
+}

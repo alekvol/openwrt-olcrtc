@@ -1,0 +1,132 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2026 alekvol
+
+USE_PROCD=1
+START=95
+STOP=10
+
+NAME=olcrtc
+PROG=/usr/bin/olcrtc
+
+append_opt() {
+	local val="$2"
+	[ -n "$val" ] && procd_append_param command "$1" "$val"
+}
+
+start_instance() {
+	local cfg="$1"
+	local enabled carrier transport room_id client_id key dns link \
+	      socks_host socks_port socks_user socks_pass data_dir \
+	      video_w video_h video_fps video_bitrate video_hw video_codec \
+	      video_qr_recovery video_qr_size video_tile_module video_tile_rs \
+	      vp8_fps vp8_batch \
+	      sei_fps sei_batch sei_frag sei_ack_ms
+
+	config_get_bool enabled "$cfg" enabled 0
+	[ "$enabled" = "1" ] || return 0
+
+	config_get carrier    "$cfg" carrier    wbstream
+	config_get transport  "$cfg" transport  datachannel
+	config_get room_id    "$cfg" room_id
+	config_get client_id  "$cfg" client_id  default
+	config_get key        "$cfg" key
+	config_get dns        "$cfg" dns        1.1.1.1:53
+	config_get link       "$cfg" link       direct
+	config_get socks_host "$cfg" socks_host 127.0.0.1
+	config_get socks_port "$cfg" socks_port 8808
+	config_get socks_user "$cfg" socks_user
+	config_get socks_pass "$cfg" socks_pass
+	config_get data_dir   "$cfg" data_dir   /usr/share/olcrtc/data
+
+	if [ -z "$room_id" ] || [ -z "$key" ]; then
+		logger -t olcrtc "room_id or key not set in /etc/config/olcrtc, refusing to start"
+		return 1
+	fi
+
+	mkdir -p "$data_dir"
+
+	procd_open_instance "$cfg"
+	procd_set_param command "$PROG" \
+		-mode cnc \
+		-carrier   "$carrier" \
+		-id        "$room_id" \
+		-client-id "$client_id" \
+		-key       "$key" \
+		-link      "$link" \
+		-transport "$transport" \
+		-dns       "$dns" \
+		-data      "$data_dir" \
+		-socks-host "$socks_host" \
+		-socks-port "$socks_port"
+
+	# Optional SOCKS5 auth
+	if [ -n "$socks_user" ]; then
+		procd_append_param command -socks-user "$socks_user"
+		[ -n "$socks_pass" ] && procd_append_param command -socks-pass "$socks_pass"
+	fi
+
+	# Optional transport-specific args
+	case "$transport" in
+		videochannel)
+			config_get video_w           "$cfg" video_w
+			config_get video_h           "$cfg" video_h
+			config_get video_fps         "$cfg" video_fps
+			config_get video_bitrate     "$cfg" video_bitrate
+			config_get video_hw          "$cfg" video_hw
+			config_get video_codec       "$cfg" video_codec
+			config_get video_qr_recovery "$cfg" video_qr_recovery
+			config_get video_qr_size     "$cfg" video_qr_size
+			config_get video_tile_module "$cfg" video_tile_module
+			config_get video_tile_rs     "$cfg" video_tile_rs
+			append_opt -video-w           "$video_w"
+			append_opt -video-h           "$video_h"
+			append_opt -video-fps         "$video_fps"
+			append_opt -video-bitrate     "$video_bitrate"
+			append_opt -video-hw          "$video_hw"
+			append_opt -video-codec       "$video_codec"
+			append_opt -video-qr-recovery "$video_qr_recovery"
+			[ "${video_qr_size:-0}" -gt 0 ] 2>/dev/null && \
+				procd_append_param command -video-qr-size "$video_qr_size"
+			if [ "$video_codec" = "tile" ]; then
+				append_opt -video-tile-module "$video_tile_module"
+				append_opt -video-tile-rs     "$video_tile_rs"
+			fi
+			;;
+		vp8channel)
+			config_get vp8_fps   "$cfg" vp8_fps
+			config_get vp8_batch "$cfg" vp8_batch
+			append_opt -vp8-fps   "$vp8_fps"
+			append_opt -vp8-batch "$vp8_batch"
+			;;
+		seichannel)
+			config_get sei_fps    "$cfg" sei_fps
+			config_get sei_batch  "$cfg" sei_batch
+			config_get sei_frag   "$cfg" sei_frag
+			config_get sei_ack_ms "$cfg" sei_ack_ms
+			append_opt -fps    "$sei_fps"
+			append_opt -batch  "$sei_batch"
+			append_opt -frag   "$sei_frag"
+			append_opt -ack-ms "$sei_ack_ms"
+			;;
+	esac
+
+	procd_set_param respawn 3600 5 0
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_set_param file /etc/config/olcrtc
+	procd_close_instance
+}
+
+start_service() {
+	config_load olcrtc
+	config_foreach start_instance olcrtc
+}
+
+service_triggers() {
+	procd_add_reload_trigger "olcrtc"
+}
+
+reload_service() {
+	stop
+	start
+}

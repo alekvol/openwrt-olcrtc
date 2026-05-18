@@ -1,0 +1,103 @@
+name: Build ipk (Filogic / MT7981B)
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+    inputs:
+      openwrt_version:
+        description: 'OpenWrt version (e.g. 24.10.0, SNAPSHOT)'
+        required: true
+        default: 'SNAPSHOT'
+      target:
+        description: 'Target (e.g. mediatek/filogic, x86/64)'
+        required: true
+        default: 'mediatek/filogic'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version || 'SNAPSHOT' }}
+      TARGET:          ${{ github.event.inputs.target           || 'mediatek/filogic' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ccache file gawk gettext \
+            git libncurses5-dev libssl-dev python3 python3-distutils rsync \
+            subversion unzip wget zlib1g-dev libelf-dev
+
+      - name: Resolve SDK URL
+        id: sdk
+        run: |
+          set -e
+          if [ "$OPENWRT_VERSION" = "SNAPSHOT" ]; then
+            BASE="https://downloads.openwrt.org/snapshots/targets/${TARGET}"
+          else
+            BASE="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${TARGET}"
+          fi
+          echo "Base: $BASE"
+          SDK_FILE=$(curl -fsSL "$BASE/" | grep -oE 'openwrt-sdk[^"]+x86_64\.tar\.[xz]+' | head -n1)
+          echo "SDK file: $SDK_FILE"
+          echo "url=${BASE}/${SDK_FILE}" >> "$GITHUB_OUTPUT"
+          echo "file=${SDK_FILE}"        >> "$GITHUB_OUTPUT"
+
+      - name: Download SDK
+        run: |
+          wget -q "${{ steps.sdk.outputs.url }}" -O sdk.tar
+          mkdir sdk && tar -xf sdk.tar -C sdk --strip-components=1
+
+      - name: Install feeds
+        working-directory: sdk
+        run: |
+          cp feeds.conf.default feeds.conf
+          echo "src-link olcrtc ${GITHUB_WORKSPACE}" >> feeds.conf
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          ./scripts/feeds install -a -p olcrtc
+
+      - name: Configure
+        working-directory: sdk
+        run: |
+          cat > .config <<EOF
+          CONFIG_ALL_NONSHARED=n
+          CONFIG_ALL=n
+          CONFIG_AUTOREMOVE=n
+          CONFIG_PACKAGE_olcrtc=m
+          CONFIG_PACKAGE_olcrtc-tun2socks=m
+          CONFIG_PACKAGE_luci-app-olcrtc=m
+          CONFIG_PACKAGE_hev-socks5-tunnel=m
+          EOF
+          make defconfig
+
+      - name: Build
+        working-directory: sdk
+        run: |
+          make package/olcrtc/compile         V=s -j$(nproc) || make package/olcrtc/compile         V=s
+          make package/olcrtc-tun2socks/compile V=s -j$(nproc) || make package/olcrtc-tun2socks/compile V=s
+          make package/luci-app-olcrtc/compile  V=s -j$(nproc) || make package/luci-app-olcrtc/compile  V=s
+
+      - name: Collect ipks
+        run: |
+          mkdir -p artifacts
+          find sdk/bin -name 'olcrtc*.ipk' -o -name 'luci-app-olcrtc*.ipk' | xargs -I{} cp {} artifacts/
+          ls -la artifacts/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: olcrtc-ipk-${{ env.OPENWRT_VERSION }}-${{ env.TARGET }}
+          path: artifacts/*.ipk
+
+      - name: Publish release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.ipk

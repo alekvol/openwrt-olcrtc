@@ -1,0 +1,24 @@
+tunnel:
+  name: __TUN_NAME__
+  mtu: __MTU__
+  multi-queue: false
+  ipv4: __TUN_IPV4__
+  ipv6: '::/0'
+  post-up-script: null
+  pre-down-script: null
+
+socks5:
+  port: __SOCKS_PORT__
+  address: __SOCKS_HOST__
+  udp: 'udp'
+  username: '__SOCKS_USER__'
+  password: '__SOCKS_PASS__'
+  mark: 0
+
+misc:
+  task-stack-size: 20480
+  connect-timeout: 5000
+  read-write-timeout: 60000
+  log-file: stderr
+  log-level: __LOG_LEVEL__
+  limit-nofile: 65535
