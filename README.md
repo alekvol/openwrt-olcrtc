@@ -7,7 +7,8 @@ OpenWrt feed для запуска [olcRTC](https://github.com/openlibrecommunit
 Поддерживаемые таргеты (рекомендуется): **aarch64_cortex-a53** (MT7981B / Filogic 820),
 **x86_64**, **aarch64_generic**.
 
-Версия OpenWrt: **24.10 / SNAPSHOT** (Go 1.23+ в host SDK).
+Версия OpenWrt: **25.12** (рекомендуется, текущий стабильный, пакет-менеджер `apk`)
+или **24.10** (старый стабильный, `opkg`) или **SNAPSHOT**.
 
 ## Состав
 
@@ -35,17 +36,33 @@ make menuconfig    # Network -> olcrtc, olcrtc-tun2socks ; LuCI -> 3.application
 make package/olcrtc/compile V=s
 ```
 
-## Готовые ipk без сборки
+## Готовые пакеты без сборки
 
-Если в репозитории включён GitHub Actions workflow `build.yml`, артефакты
-собираются под `aarch64_cortex-a53` (Filogic 820 / MT7981B) и публикуются в Releases.
+GitHub Actions workflow `build.yml` собирает пакеты под `aarch64_cortex-a53`
+(Filogic 820 / MT7981B). По умолчанию целевая версия — **25.12.3** (выходной
+формат — `.apk`). Артефакты доступны во вкладке Actions, а на тегах
+публикуются в Releases.
+
+Чтобы пересобрать под 24.10 (формат `.ipk`) — Run workflow → openwrt_version = `24.10.6`.
 
 ## Установка на роутере
 
+### OpenWrt 25.12 (apk)
+
+```
+apk update
+apk add ./olcrtc-*.apk ./olcrtc-tun2socks-*.apk \
+        ./luci-app-olcrtc-*.apk ./luci-i18n-olcrtc-ru-*.apk
+apk add hev-socks5-tunnel kmod-tun ca-bundle curl
+```
+
+### OpenWrt 24.10 (opkg)
+
 ```
 opkg update
-opkg install olcrtc olcrtc-tun2socks luci-app-olcrtc luci-i18n-olcrtc-ru \
-             hev-socks5-tunnel kmod-tun ca-bundle curl
+opkg install ./olcrtc_*.ipk ./olcrtc-tun2socks_*.ipk \
+             ./luci-app-olcrtc_*.ipk ./luci-i18n-olcrtc-ru_*.ipk
+opkg install hev-socks5-tunnel kmod-tun ca-bundle curl
 ```
 
 ## Настройка

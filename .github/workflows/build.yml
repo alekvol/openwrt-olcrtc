@@ -1,4 +1,4 @@
-name: Build ipk (Filogic / MT7981B)
+name: Build package (Filogic / MT7981B)
 
 on:
   push:
@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       openwrt_version:
-        description: 'OpenWrt version (e.g. 24.10.0, SNAPSHOT)'
+        description: 'OpenWrt version (e.g. 25.12.3, 24.10.6, SNAPSHOT)'
         required: true
-        default: 'SNAPSHOT'
+        default: '25.12.3'
       target:
         description: 'Target (e.g. mediatek/filogic, x86/64)'
         required: true
@@ -21,7 +21,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     env:
-      OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version || 'SNAPSHOT' }}
+      OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version || '25.12.3' }}
       TARGET:          ${{ github.event.inputs.target           || 'mediatek/filogic' }}
     steps:
       - name: Checkout
@@ -32,7 +32,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential ccache file gawk gettext \
             git libncurses5-dev libssl-dev python3 python3-distutils rsync \
-            subversion unzip wget zlib1g-dev libelf-dev
+            subversion unzip wget zlib1g-dev libelf-dev zstd
 
       - name: Resolve SDK URL
         id: sdk
@@ -44,15 +44,28 @@ jobs:
             BASE="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${TARGET}"
           fi
           echo "Base: $BASE"
-          SDK_FILE=$(curl -fsSL "$BASE/" | grep -oE 'openwrt-sdk[^"]+x86_64\.tar\.[xz]+' | head -n1)
+          # SDK archive may be .tar.xz (older) or .tar.zst (25.12+)
+          SDK_FILE=$(curl -fsSL "$BASE/" \
+            | grep -oE 'openwrt-sdk[^"]+x86_64\.tar\.(xz|zst)' \
+            | head -n1)
+          if [ -z "$SDK_FILE" ]; then
+            echo "::error::SDK archive not found at $BASE/"
+            curl -fsSL "$BASE/" | grep -oE 'openwrt-sdk[^"]+' | head -5
+            exit 1
+          fi
           echo "SDK file: $SDK_FILE"
           echo "url=${BASE}/${SDK_FILE}" >> "$GITHUB_OUTPUT"
           echo "file=${SDK_FILE}"        >> "$GITHUB_OUTPUT"
 
       - name: Download SDK
         run: |
-          wget -q "${{ steps.sdk.outputs.url }}" -O sdk.tar
-          mkdir sdk && tar -xf sdk.tar -C sdk --strip-components=1
+          wget -q "${{ steps.sdk.outputs.url }}" -O sdk.archive
+          mkdir sdk
+          case "${{ steps.sdk.outputs.file }}" in
+            *.tar.zst) tar --zstd -xf sdk.archive -C sdk --strip-components=1 ;;
+            *.tar.xz)  tar -xJf       sdk.archive -C sdk --strip-components=1 ;;
+            *) echo "unknown archive format"; exit 1 ;;
+          esac
 
       - name: Install feeds
         working-directory: sdk
@@ -86,20 +99,29 @@ jobs:
           make package/luci-app-olcrtc/compile  V=s -j$(nproc) || make package/luci-app-olcrtc/compile  V=s
           make package/luci-i18n-olcrtc-ru/compile V=s -j$(nproc) || true
 
-      - name: Collect ipks
+      - name: Collect packages
         run: |
           mkdir -p artifacts
-          find sdk/bin \( -name 'olcrtc*.ipk' -o -name 'luci-app-olcrtc*.ipk' -o -name 'luci-i18n-olcrtc-*.ipk' \) -exec cp {} artifacts/ \;
+          # 25.12+ -> .apk, 24.10 and older -> .ipk
+          find sdk/bin \( \
+              -name 'olcrtc*.ipk'         -o -name 'olcrtc*.apk' -o \
+              -name 'luci-app-olcrtc*.ipk' -o -name 'luci-app-olcrtc*.apk' -o \
+              -name 'luci-i18n-olcrtc-*.ipk' -o -name 'luci-i18n-olcrtc-*.apk' \
+            \) -exec cp {} artifacts/ \;
           ls -la artifacts/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: olcrtc-ipk-${{ env.OPENWRT_VERSION }}-${{ env.TARGET }}
-          path: artifacts/*.ipk
+          name: olcrtc-${{ env.OPENWRT_VERSION }}-${{ env.TARGET }}
+          path: |
+            artifacts/*.ipk
+            artifacts/*.apk
 
       - name: Publish release (on tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*.ipk
+          files: |
+            artifacts/*.ipk
+            artifacts/*.apk
