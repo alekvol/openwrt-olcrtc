@@ -25,7 +25,7 @@ jobs:
       TARGET:          ${{ github.event.inputs.target           || 'mediatek/filogic' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install deps
         run: |
@@ -109,11 +109,27 @@ jobs:
               -name 'luci-i18n-olcrtc-*.ipk' -o -name 'luci-i18n-olcrtc-*.apk' \
             \) -exec cp {} artifacts/ \;
           ls -la artifacts/
+          count=$(ls -1 artifacts/ 2>/dev/null | wc -l)
+          echo "Collected $count package(s)"
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No olcrtc packages produced. Check the Build step."
+            echo "--- bin tree (debug) ---"
+            find sdk/bin -maxdepth 6 -type d | head -30
+            find sdk/bin -name '*.apk' -o -name '*.ipk' | grep -i olcrtc || true
+            exit 1
+          fi
+
+      - name: Compute artifact name
+        id: artname
+        run: |
+          # GitHub Actions artifact names cannot contain '/', use '-' instead
+          safe_target="${TARGET//\//-}"
+          echo "name=olcrtc-${OPENWRT_VERSION}-${safe_target}" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
-          name: olcrtc-${{ env.OPENWRT_VERSION }}-${{ env.TARGET }}
+          name: ${{ steps.artname.outputs.name }}
           path: |
             artifacts/*.ipk
             artifacts/*.apk
