@@ -52,6 +52,11 @@ define Package/olcrtc/conffiles
 /etc/config/olcrtc
 endef
 
+define Build/Prepare
+	$(call Build/Prepare/Default)
+	sed -i 's/^go 1\.[0-9].*/go 1.21/g' $(PKG_BUILD_DIR)/go.mod
+endef
+
 define Package/olcrtc/install
 	$(call GoPackage/Package/Install/Bin,$(1))
 
