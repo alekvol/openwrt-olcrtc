@@ -3,13 +3,14 @@
 		"description": "Grant UCI and system access for luci-app-olcrtc",
 		"read":  {
 			"uci":    [ "olcrtc", "olcrtc-tun", "network", "firewall" ],
-			"ubus":   { "olcrtc": [ "getStatus", "getLogs", "getFirewallStatus" ] },
+			"ubus":   { "olcrtc": [ "getStatus", "getLogs", "getFirewallStatus", "getWatchdogStatus" ] },
 			"file":   {
 				"/etc/init.d/olcrtc":      [ "exec" ],
 				"/etc/init.d/olcrtc-tun":  [ "exec" ],
 				"/sbin/logread":           [ "exec" ],
 				"/bin/pidof":              [ "exec" ],
-				"/usr/bin/curl":           [ "exec" ]
+				"/usr/bin/curl":           [ "exec" ],
+				"/usr/bin/pgrep":          [ "exec" ]
 			}
 		},
 		"write": {

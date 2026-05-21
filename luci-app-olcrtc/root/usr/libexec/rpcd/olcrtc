@@ -12,7 +12,8 @@ case "$1" in
 		echo '"serviceAction":{"action":""},'
 		echo '"setupFirewall":{},'
 		echo '"removeFirewall":{},'
-		echo '"getFirewallStatus":{}'
+		echo '"getFirewallStatus":{},'
+		echo '"getWatchdogStatus":{}'
 		echo '}'
 	;;
 	call)
@@ -267,6 +268,61 @@ case "$1" in
 				else
 					json_add_boolean "configured" 0
 				fi
+				json_dump
+			;;
+
+			getWatchdogStatus)
+				WD_ENABLED=0
+				WD_RUNNING=0
+				WD_PID=""
+				WD_LAST_PROBE=""
+				WD_FAIL_COUNT=""
+				WD_RESTARTS=""
+
+				# Check if watchdog is enabled in UCI
+				WD_EN_VAL=$(uci -q get olcrtc.watchdog.enabled 2>/dev/null)
+				[ "$WD_EN_VAL" = "1" ] && WD_ENABLED=1
+
+				# Check if watchdog process is running
+				WD_PID=$(pgrep -f olcrtc-watchdog 2>/dev/null | head -1)
+				[ -n "$WD_PID" ] && WD_RUNNING=1
+
+				# Parse last watchdog log entries
+				WD_LOGS=$(/sbin/logread -e olcrtc-watchdog 2>/dev/null | tail -n 20)
+
+				# Extract last probe result (OK or FAILED)
+				LAST_OK=$(echo "$WD_LOGS" | grep 'probe OK' | tail -1)
+				LAST_FAIL=$(echo "$WD_LOGS" | grep 'probe FAILED' | tail -1)
+				if [ -n "$LAST_OK" ] && [ -n "$LAST_FAIL" ]; then
+					# compare which is more recent by line position
+					OK_LINE=$(echo "$WD_LOGS" | grep -n 'probe OK' | tail -1 | cut -d: -f1)
+					FAIL_LINE=$(echo "$WD_LOGS" | grep -n 'probe FAILED' | tail -1 | cut -d: -f1)
+					if [ "$OK_LINE" -gt "$FAIL_LINE" ] 2>/dev/null; then
+						WD_LAST_PROBE="ok"
+					else
+						WD_LAST_PROBE="failed"
+						# extract fail count from "probe FAILED (N/M)"
+						WD_FAIL_COUNT=$(echo "$LAST_FAIL" | grep -oE '\([0-9]+/' | tr -dc '0-9')
+					fi
+				elif [ -n "$LAST_OK" ]; then
+					WD_LAST_PROBE="ok"
+				elif [ -n "$LAST_FAIL" ]; then
+					WD_LAST_PROBE="failed"
+					WD_FAIL_COUNT=$(echo "$LAST_FAIL" | grep -oE '\([0-9]+/' | tr -dc '0-9')
+				else
+					WD_LAST_PROBE="unknown"
+				fi
+
+				# Count total restarts
+				WD_RESTARTS=$(echo "$WD_LOGS" | grep -c 'restarting olcrtc' 2>/dev/null || echo 0)
+
+				json_init
+				json_add_boolean "enabled" "$WD_ENABLED"
+				json_add_boolean "running" "$WD_RUNNING"
+				json_add_string "pid" "${WD_PID:-}"
+				json_add_string "last_probe" "$WD_LAST_PROBE"
+				json_add_string "fail_count" "${WD_FAIL_COUNT:-0}"
+				json_add_string "restarts" "${WD_RESTARTS:-0}"
 				json_dump
 			;;
 		esac

@@ -79,7 +79,7 @@ sh -c "$(wget -qO- https://raw.githubusercontent.com/alekvol/openwrt-olcrtc/mast
 5. **Настройка в Podkop / другой утилите:**
    * Откройте настройки вашей утилиты и добавьте новый прокси/outbound с протоколом **SOCKS5**.
    * Укажите хост: `127.0.0.1` и порт: `8808`.
-   * Теперь вы можете распределять трафик в Podkop, направляя нужные домены в этот SOCKS5-прокси.
+   * Подробные инструкции: [Podkop](docs/integration-podkop.md) · [Sing-box](docs/integration-singbox.md)
 
 ### Удаление
 

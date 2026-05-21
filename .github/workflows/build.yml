@@ -1,4 +1,4 @@
-name: Build package (Filogic / MT7981B)
+name: Build packages (multi-arch)
 
 on:
   push:
@@ -22,9 +22,14 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        openwrt_version: ['25.12.3', '24.10.6']
+        target: ['mediatek/filogic', 'x86/64']
     env:
-      OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version || '25.12.3' }}
-      TARGET:          ${{ github.event.inputs.target           || 'mediatek/filogic' }}
+      OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version || matrix.openwrt_version }}
+      TARGET:          ${{ github.event.inputs.target           || matrix.target }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -46,7 +51,6 @@ jobs:
             BASE="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${TARGET}"
           fi
           echo "Base: $BASE"
-          # SDK archive may be .tar.xz (older) or .tar.zst (25.12+)
           SDK_FILE=$(curl -fsSL "$BASE/" \
             | grep -oE 'openwrt-sdk[^"]+x86_64\.tar\.(xz|zst)' \
             | head -n1)
@@ -104,7 +108,6 @@ jobs:
       - name: Collect packages
         run: |
           mkdir -p artifacts
-          # 25.12+ -> .apk, 24.10 and older -> .ipk
           find sdk/bin \( \
               -name 'olcrtc*.ipk'         -o -name 'olcrtc*.apk' -o \
               -name 'luci-app-olcrtc*.ipk' -o -name 'luci-app-olcrtc*.apk' -o \
@@ -124,7 +127,6 @@ jobs:
       - name: Compute artifact name
         id: artname
         run: |
-          # GitHub Actions artifact names cannot contain '/', use '-' instead
           safe_target="${TARGET//\//-}"
           echo "name=olcrtc-${OPENWRT_VERSION}-${safe_target}" >> "$GITHUB_OUTPUT"
 

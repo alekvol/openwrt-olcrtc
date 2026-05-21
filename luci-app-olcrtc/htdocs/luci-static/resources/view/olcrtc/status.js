@@ -25,6 +25,12 @@ var callServiceAction = rpc.declare({
 	expect: {}
 });
 
+var callGetWatchdogStatus = rpc.declare({
+	object: 'olcrtc',
+	method: 'getWatchdogStatus',
+	expect: {}
+});
+
 function formatUptime(seconds) {
 	if (!seconds || seconds <= 0)
 		return '-';
@@ -45,6 +51,18 @@ function makeStatusBadge(running) {
 	var text  = running ? _('Running') : _('Stopped');
 	var icon  = running ? '●' : '●';
 	return E('span', { 'style': 'color:' + color + ';font-weight:bold;font-size:1.1em;' }, icon + ' ' + text);
+}
+
+function makeWatchdogBadge(wd) {
+	if (!wd || !wd.enabled)
+		return E('span', { 'style': 'color:#888;font-weight:bold;font-size:1.1em;' }, '○ ' + _('Disabled'));
+	if (!wd.running)
+		return E('span', { 'style': 'color:#c00;font-weight:bold;font-size:1.1em;' }, '● ' + _('Stopped'));
+	if (wd.last_probe === 'ok')
+		return E('span', { 'style': 'color:#00a000;font-weight:bold;font-size:1.1em;' }, '● ' + _('Active — Probe OK'));
+	if (wd.last_probe === 'failed')
+		return E('span', { 'style': 'color:#e0a000;font-weight:bold;font-size:1.1em;' }, '● ' + _('Active — Probe FAILED') + ' (' + (wd.fail_count || '?') + ')');
+	return E('span', { 'style': 'color:#00a000;font-weight:bold;font-size:1.1em;' }, '● ' + _('Active'));
 }
 
 function makeBtn(label, style, action, busyMsg) {
@@ -69,13 +87,15 @@ return view.extend({
 	load: function() {
 		return Promise.all([
 			callGetStatus(),
-			callGetLogs(80)
+			callGetLogs(80),
+			callGetWatchdogStatus()
 		]);
 	},
 
 	render: function(data) {
 		var st   = data[0] || {};
 		var logs = (data[1] || {}).logs || '';
+		var wd   = data[2] || {};
 
 		var statusRows = E('table', { 'class': 'table', 'style': 'width:100%;' }, [
 			E('tr', { 'class': 'tr' }, [
@@ -85,6 +105,10 @@ return view.extend({
 			E('tr', { 'class': 'tr' }, [
 				E('td', { 'class': 'td', 'style': 'font-weight:bold;' }, _('TUN bridge')),
 				E('td', { 'class': 'td' }, makeStatusBadge(st.tun_running))
+			]),
+			E('tr', { 'class': 'tr' }, [
+				E('td', { 'class': 'td', 'style': 'font-weight:bold;' }, _('Watchdog')),
+				E('td', { 'class': 'td' }, makeWatchdogBadge(wd))
 			]),
 			E('tr', { 'class': 'tr' }, [
 				E('td', { 'class': 'td', 'style': 'font-weight:bold;' }, _('PID')),
@@ -97,6 +121,10 @@ return view.extend({
 			E('tr', { 'class': 'tr' }, [
 				E('td', { 'class': 'td', 'style': 'font-weight:bold;' }, _('External IP')),
 				E('td', { 'class': 'td' }, st.external_ip || _('N/A'))
+			]),
+			E('tr', { 'class': 'tr' }, [
+				E('td', { 'class': 'td', 'style': 'font-weight:bold;' }, _('Watchdog restarts')),
+				E('td', { 'class': 'td' }, (wd.restarts || '0'))
 			])
 		]);
 
@@ -145,20 +173,23 @@ return view.extend({
 
 		/* ── Poll for live refresh ──────────────────────────── */
 		poll.add(function() {
-			return Promise.all([callGetStatus(), callGetLogs(80)]).then(function(res) {
+			return Promise.all([callGetStatus(), callGetLogs(80), callGetWatchdogStatus()]).then(function(res) {
 				var s = res[0] || {};
 				var l = (res[1] || {}).logs || '';
+				var w = res[2] || {};
 
 				/* update status table */
 				var table = document.querySelector('#olcrtc-status-table');
 				if (table) {
 					var cells = table.querySelectorAll('td.td:nth-child(2)');
-					if (cells.length >= 5) {
+					if (cells.length >= 7) {
 						dom.content(cells[0], makeStatusBadge(s.olcrtc_running));
 						dom.content(cells[1], makeStatusBadge(s.tun_running));
-						dom.content(cells[2], s.olcrtc_pid || '-');
-						dom.content(cells[3], formatUptime(s.uptime));
-						dom.content(cells[4], s.external_ip || _('N/A'));
+						dom.content(cells[2], makeWatchdogBadge(w));
+						dom.content(cells[3], s.olcrtc_pid || '-');
+						dom.content(cells[4], formatUptime(s.uptime));
+						dom.content(cells[5], s.external_ip || _('N/A'));
+						dom.content(cells[6], (w.restarts || '0'));
 					}
 				}
 
