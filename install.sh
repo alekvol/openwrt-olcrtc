@@ -7,7 +7,7 @@
 set -e
 
 GITHUB_REPO="alekvol/openwrt-olcrtc"
-PKG_VERSION="0.1.0-1"
+PKG_VERSION="0.1.2-1"
 TMP_DIR="/tmp/olcrtc-install"
 
 GREEN='\033[0;32m'
