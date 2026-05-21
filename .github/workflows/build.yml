@@ -3,6 +3,8 @@ name: Build package (Filogic / MT7981B)
 on:
   push:
     branches: [ master, main ]
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       openwrt_version:
