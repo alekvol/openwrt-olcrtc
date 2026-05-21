@@ -4,12 +4,17 @@
 		"order": 60,
 		"action": {
 			"type": "view",
-			"path": "olcrtc/client"
+			"path": "olcrtc/status"
 		},
 		"depends": {
 			"acl": [ "luci-app-olcrtc" ],
 			"uci": { "olcrtc": true }
 		}
+	},
+	"admin/services/olcrtc/status": {
+		"title": "Status",
+		"order": 5,
+		"action": { "type": "view", "path": "olcrtc/status" }
 	},
 	"admin/services/olcrtc/client": {
 		"title": "Client",

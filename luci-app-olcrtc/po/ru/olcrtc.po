@@ -1,26 +1,11 @@
 msgid ""
-msgstr ""
-"Content-Type: text/plain; charset=UTF-8\n"
-"Project-Id-Version: luci-app-olcrtc\n"
-"Language: ru\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-
-msgid "olcRTC"
-msgstr "olcRTC"
-
-msgid "Client"
-msgstr "Клиент"
-
-msgid "Tunnel"
-msgstr "Туннель"
-
-# --- client.js ---
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
 
 msgid "olcRTC client"
-msgstr "Клиент olcRTC"
+msgstr "olcRTC клиент"
 
 msgid "WebRTC-tunneled SOCKS5 proxy client. Get room_id/key from your server operator."
-msgstr "SOCKS5-клиент, туннелирующий трафик поверх WebRTC. room_id и ключ выдаёт оператор сервера."
+msgstr "SOCKS5-прокси через WebRTC-туннель. Получите room_id/key у оператора сервера."
 
 msgid "Instance"
 msgstr "Экземпляр"
@@ -29,7 +14,7 @@ msgid "Enabled"
 msgstr "Включено"
 
 msgid "Carrier"
-msgstr "Носитель (carrier)"
+msgstr "Сервис"
 
 msgid "Transport"
 msgstr "Транспорт"
@@ -44,27 +29,49 @@ msgid "Encryption key (hex)"
 msgstr "Ключ шифрования (hex)"
 
 msgid "Egress DNS"
-msgstr "DNS для исходящих запросов"
+msgstr "DNS-сервер"
 
 msgid "SOCKS5 bind host"
-msgstr "Адрес SOCKS5 (bind)"
+msgstr "SOCKS5 адрес привязки"
 
 msgid "SOCKS5 bind port"
-msgstr "Порт SOCKS5 (bind)"
+msgstr "SOCKS5 порт привязки"
 
 msgid "SOCKS5 username (optional)"
-msgstr "Имя пользователя SOCKS5 (необязательно)"
+msgstr "SOCKS5 логин (необязательно)"
 
 msgid "SOCKS5 password (optional)"
-msgstr "Пароль SOCKS5 (необязательно)"
+msgstr "SOCKS5 пароль (необязательно)"
 
-# --- tunnel.js ---
+msgid "Watchdog"
+msgstr "Сторожевой таймер"
+
+msgid "Restart olcrtc if it cannot reach the probe URL through its own SOCKS5."
+msgstr "Перезапускать olcrtc, если он не может достичь URL-проверки через свой SOCKS5."
+
+msgid "Watchdog enabled"
+msgstr "Сторожевой таймер включён"
+
+msgid "Probe URL"
+msgstr "URL для проверки"
+
+msgid "Probe interval (s)"
+msgstr "Интервал проверки (с)"
+
+msgid "Probe timeout (s)"
+msgstr "Таймаут проверки (с)"
+
+msgid "Consecutive failures before restart"
+msgstr "Допустимое количество ошибок подряд"
 
 msgid "olcRTC TUN bridge"
-msgstr "TUN-мост olcRTC"
+msgstr "olcRTC TUN мост"
 
 msgid "Brings up a TUN interface forwarding packets into the local olcRTC SOCKS5 endpoint."
-msgstr "Поднимает TUN-интерфейс и направляет весь его трафик в локальный SOCKS5 olcRTC."
+msgstr "Создаёт TUN-интерфейс, перенаправляющий пакеты в локальный SOCKS5 olcRTC."
+
+msgid "Tunnel"
+msgstr "Туннель"
 
 msgid "TUN interface name"
 msgstr "Имя TUN-интерфейса"
@@ -73,48 +80,253 @@ msgid "TUN IPv4 address"
 msgstr "IPv4-адрес TUN"
 
 msgid "TUN IPv4 netmask (CIDR)"
-msgstr "Маска IPv4 TUN (CIDR)"
+msgstr "Маска подсети TUN (CIDR)"
 
 msgid "MTU"
 msgstr "MTU"
 
 msgid "SOCKS5 upstream host"
-msgstr "Адрес upstream SOCKS5"
+msgstr "SOCKS5 хост (upstream)"
 
 msgid "SOCKS5 upstream port"
-msgstr "Порт upstream SOCKS5"
+msgstr "SOCKS5 порт (upstream)"
 
 msgid "Log level"
 msgstr "Уровень логирования"
 
 msgid "Auto-route LAN through tunnel"
-msgstr "Автоматически направлять LAN через туннель"
+msgstr "Автомаршрутизация LAN через туннель"
 
 msgid "Adds an ip rule sending packets from LAN bridge to the tunnel routing table on start."
-msgstr "При старте добавляет правило ip rule, отправляющее трафик LAN-моста в таблицу маршрутизации туннеля."
+msgstr "Добавляет ip rule при старте, чтобы пакеты из LAN-моста шли через таблицу маршрутизации туннеля."
 
 msgid "LAN interface"
 msgstr "LAN-интерфейс"
 
-# --- watchdog (см. ниже, добавится позже в client.js) ---
+msgid "olcRTC — Status"
+msgstr "olcRTC — Статус"
 
-msgid "Watchdog"
-msgstr "Watchdog"
+msgid "Service Status"
+msgstr "Состояние сервисов"
 
-msgid "Watchdog enabled"
-msgstr "Watchdog включён"
+msgid "olcRTC client"
+msgstr "olcRTC клиент"
 
-msgid "Restart olcrtc if it cannot reach the probe URL through its own SOCKS5."
-msgstr "Перезапускать olcrtc, если он не может достучаться до проверочного URL через свой собственный SOCKS5."
+msgid "TUN bridge"
+msgstr "TUN мост"
 
-msgid "Probe URL"
-msgstr "URL для проверки"
+msgid "Running"
+msgstr "Работает"
 
-msgid "Probe interval (s)"
-msgstr "Период проверки (с)"
+msgid "Stopped"
+msgstr "Остановлен"
 
-msgid "Probe timeout (s)"
-msgstr "Таймаут проверки (с)"
+msgid "PID"
+msgstr "PID"
 
-msgid "Consecutive failures before restart"
-msgstr "Подряд неудачных проверок до перезапуска"
+msgid "Uptime"
+msgstr "Время работы"
+
+msgid "External IP"
+msgstr "Внешний IP"
+
+msgid "N/A"
+msgstr "Н/Д"
+
+msgid "Service Control"
+msgstr "Управление сервисами"
+
+msgid "All services"
+msgstr "Все сервисы"
+
+msgid "Start all"
+msgstr "Запустить все"
+
+msgid "Stop all"
+msgstr "Остановить все"
+
+msgid "Restart all"
+msgstr "Перезапустить все"
+
+msgid "Start"
+msgstr "Запустить"
+
+msgid "Stop"
+msgstr "Остановить"
+
+msgid "Restart"
+msgstr "Перезапустить"
+
+msgid "Starting…"
+msgstr "Запуск…"
+
+msgid "Stopping…"
+msgstr "Остановка…"
+
+msgid "Restarting…"
+msgstr "Перезапуск…"
+
+msgid "Error: "
+msgstr "Ошибка: "
+
+msgid "Logs"
+msgstr "Логи"
+
+msgid "Auto-refreshes every 5 seconds. Last 80 lines."
+msgstr "Обновляется автоматически каждые 5 секунд. Последние 80 строк."
+
+msgid "No log entries."
+msgstr "Нет записей в логе."
+
+msgid "Quick Connect"
+msgstr "Быстрое подключение"
+
+msgid "Import URI / Subscription"
+msgstr "Импорт URI / Подписка"
+
+msgid "or"
+msgstr "или"
+
+msgid "subscription URL"
+msgstr "URL подписки"
+
+msgid "Import"
+msgstr "Импортировать"
+
+msgid "Loading…"
+msgstr "Загрузка…"
+
+msgid "Invalid olcrtc:// URI format"
+msgstr "Неверный формат olcrtc:// URI"
+
+msgid "URI imported. Review settings and click Save & Apply."
+msgstr "URI импортирован. Проверьте настройки и нажмите Сохранить и Применить."
+
+msgid "No servers found in subscription"
+msgstr "Серверы не найдены в подписке"
+
+msgid "Failed to fetch subscription: "
+msgstr "Не удалось загрузить подписку: "
+
+msgid "Enter an olcrtc:// URI or https:// subscription URL"
+msgstr "Введите olcrtc:// URI или https:// URL подписки"
+
+msgid "Server"
+msgstr "Сервер"
+
+msgid "Server \"%s\" applied. Review settings and click Save & Apply."
+msgstr "Сервер \"%s\" применён. Проверьте настройки и нажмите Сохранить и Применить."
+
+msgid "Subscription"
+msgstr "Подписка"
+
+msgid "Refresh: "
+msgstr "Обновление: "
+
+msgid "Compatibility"
+msgstr "Совместимость"
+
+msgid "Link mode"
+msgstr "Режим связи"
+
+msgid "Video width"
+msgstr "Ширина видео"
+
+msgid "Video height"
+msgstr "Высота видео"
+
+msgid "Video FPS"
+msgstr "FPS видео"
+
+msgid "Video bitrate"
+msgstr "Битрейт видео"
+
+msgid "Hardware acceleration"
+msgstr "Аппаратное ускорение"
+
+msgid "Video codec"
+msgstr "Видеокодек"
+
+msgid "QR error recovery"
+msgstr "Восстановление ошибок QR"
+
+msgid "QR code size (0=auto)"
+msgstr "Размер QR-кода (0=авто)"
+
+msgid "Tile module"
+msgstr "Модуль тайла"
+
+msgid "Tile Reed-Solomon"
+msgstr "Тайл Reed-Solomon"
+
+msgid "VP8 FPS"
+msgstr "VP8 FPS"
+
+msgid "VP8 batch size"
+msgstr "VP8 размер пакета"
+
+msgid "SEI FPS"
+msgstr "SEI FPS"
+
+msgid "SEI batch size"
+msgstr "SEI размер пакета"
+
+msgid "SEI fragment size"
+msgstr "SEI размер фрагмента"
+
+msgid "SEI ACK timeout (ms)"
+msgstr "SEI таймаут ACK (мс)"
+
+msgid "Firewall & Routing"
+msgstr "Файрвол и маршрутизация"
+
+msgid "Firewall status"
+msgstr "Статус файрвола"
+
+msgid "Configured"
+msgstr "Настроено"
+
+msgid "Not configured"
+msgstr "Не настроено"
+
+msgid "Zone \"olc\", forwarding lan→olc, network interface olctun"
+msgstr "Зона \"olc\", форвардинг lan→olc, сетевой интерфейс olctun"
+
+msgid "Firewall zone and routing rules are not set up"
+msgstr "Зона файрвола и правила маршрутизации не настроены"
+
+msgid "Auto-configure firewall"
+msgstr "Автонастройка файрвола"
+
+msgid "Reconfigure"
+msgstr "Перенастроить"
+
+msgid "Setup firewall & routing"
+msgstr "Настроить файрвол и маршрутизацию"
+
+msgid "Firewall configured successfully. Network and firewall services reloaded."
+msgstr "Файрвол настроен. Сетевые сервисы и файрвол перезагружены."
+
+msgid "Failed to configure firewall: "
+msgstr "Ошибка настройки файрвола: "
+
+msgid "Remove firewall rules"
+msgstr "Удалить правила файрвола"
+
+msgid "Remove zone & routing"
+msgstr "Удалить зону и маршрутизацию"
+
+msgid "Confirm removal"
+msgstr "Подтвердите удаление"
+
+msgid "This will remove the firewall zone \"olc\", forwarding rule, and network interface \"olctun\". LAN clients will no longer be routed through the tunnel."
+msgstr "Будут удалены зона файрвола \"olc\", правило форвардинга и сетевой интерфейс \"olctun\". Клиенты LAN перестанут маршрутизироваться через туннель."
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Remove"
+msgstr "Удалить"
+
+msgid "Firewall rules removed."
+msgstr "Правила файрвола удалены."

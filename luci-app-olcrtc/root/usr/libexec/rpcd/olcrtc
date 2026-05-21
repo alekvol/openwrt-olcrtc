@@ -1,0 +1,274 @@
+#!/bin/sh
+# rpcd plugin for luci-app-olcrtc
+# Provides JSON-RPC methods for status, logs, service control, firewall setup
+
+. /usr/share/libubox/jshn.sh
+
+case "$1" in
+	list)
+		echo '{'
+		echo '"getStatus":{},'
+		echo '"getLogs":{"lines":0},'
+		echo '"serviceAction":{"action":""},'
+		echo '"setupFirewall":{},'
+		echo '"removeFirewall":{},'
+		echo '"getFirewallStatus":{}'
+		echo '}'
+	;;
+	call)
+		case "$2" in
+			getStatus)
+				OLC_PID=$(pidof olcrtc 2>/dev/null)
+				TUN_PID=$(pidof hev-socks5-tunnel 2>/dev/null)
+				OLC_RUNNING=0
+				TUN_RUNNING=0
+				OLC_UPTIME=0
+
+				if [ -n "$OLC_PID" ]; then
+					OLC_RUNNING=1
+					# calculate uptime in seconds from /proc/PID
+					if [ -d "/proc/$OLC_PID" ]; then
+						BOOT=$(cut -d. -f1 /proc/uptime)
+						START=$(awk '{print int($22/100)}' /proc/$OLC_PID/stat 2>/dev/null || echo 0)
+						if [ "$START" -gt 0 ] 2>/dev/null; then
+							OLC_UPTIME=$((BOOT - START))
+							[ "$OLC_UPTIME" -lt 0 ] && OLC_UPTIME=0
+						fi
+					fi
+				fi
+				[ -n "$TUN_PID" ] && TUN_RUNNING=1
+
+				# get external IP if running
+				EXT_IP=""
+				if [ "$OLC_RUNNING" = "1" ]; then
+					SOCKS_HOST=$(uci -q get olcrtc.main.socks_host || echo 127.0.0.1)
+					SOCKS_PORT=$(uci -q get olcrtc.main.socks_port || echo 8808)
+					EXT_IP=$(curl --proxy "socks5h://$SOCKS_HOST:$SOCKS_PORT" \
+						--max-time 5 -s "https://api.ipify.org" 2>/dev/null || echo "")
+				fi
+
+				json_init
+				json_add_boolean "olcrtc_running" "$OLC_RUNNING"
+				json_add_boolean "tun_running" "$TUN_RUNNING"
+				json_add_string "olcrtc_pid" "${OLC_PID:-}"
+				json_add_string "tun_pid" "${TUN_PID:-}"
+				json_add_int "uptime" "$OLC_UPTIME"
+				json_add_string "external_ip" "$EXT_IP"
+				json_dump
+			;;
+
+			getLogs)
+				read -r input
+				json_load "$input"
+				json_get_var lines lines
+				[ -z "$lines" ] || [ "$lines" -eq 0 ] 2>/dev/null && lines=50
+
+				LOG_OUTPUT=$(/sbin/logread -e olcrtc 2>/dev/null | tail -n "$lines")
+
+				json_init
+				json_add_string "logs" "$LOG_OUTPUT"
+				json_dump
+			;;
+
+			serviceAction)
+				read -r input
+				json_load "$input"
+				json_get_var action action
+
+				RESULT=""
+				case "$action" in
+					start)
+						/etc/init.d/olcrtc start 2>&1
+						RESULT="started"
+					;;
+					stop)
+						/etc/init.d/olcrtc stop 2>&1
+						RESULT="stopped"
+					;;
+					restart)
+						/etc/init.d/olcrtc restart 2>&1
+						RESULT="restarted"
+					;;
+					start_tun)
+						/etc/init.d/olcrtc-tun start 2>&1
+						RESULT="tun_started"
+					;;
+					stop_tun)
+						/etc/init.d/olcrtc-tun stop 2>&1
+						RESULT="tun_stopped"
+					;;
+					restart_tun)
+						/etc/init.d/olcrtc-tun restart 2>&1
+						RESULT="tun_restarted"
+					;;
+					start_all)
+						/etc/init.d/olcrtc start 2>&1
+						sleep 2
+						/etc/init.d/olcrtc-tun start 2>&1
+						RESULT="all_started"
+					;;
+					stop_all)
+						/etc/init.d/olcrtc-tun stop 2>&1
+						/etc/init.d/olcrtc stop 2>&1
+						RESULT="all_stopped"
+					;;
+					restart_all)
+						/etc/init.d/olcrtc-tun stop 2>&1
+						/etc/init.d/olcrtc restart 2>&1
+						sleep 2
+						/etc/init.d/olcrtc-tun start 2>&1
+						RESULT="all_restarted"
+					;;
+					*)
+						RESULT="unknown_action"
+					;;
+				esac
+
+				json_init
+				json_add_string "result" "$RESULT"
+				json_dump
+			;;
+
+			setupFirewall)
+				# Create network interface for olctun
+				if ! uci -q get network.olctun >/dev/null; then
+					uci set network.olctun=interface
+					uci set network.olctun.proto='none'
+					uci set network.olctun.device='olctun'
+					uci set network.olctun.auto='1'
+					uci commit network
+				fi
+
+				# Create firewall zone 'olc'
+				ZONE_EXISTS=0
+				idx=0
+				while uci -q get "firewall.@zone[$idx]" >/dev/null 2>&1; do
+					zname=$(uci -q get "firewall.@zone[$idx].name")
+					if [ "$zname" = "olc" ]; then
+						ZONE_EXISTS=1
+						break
+					fi
+					idx=$((idx + 1))
+				done
+
+				if [ "$ZONE_EXISTS" = "0" ]; then
+					uci add firewall zone
+					uci set firewall.@zone[-1].name='olc'
+					uci set firewall.@zone[-1].input='REJECT'
+					uci set firewall.@zone[-1].output='ACCEPT'
+					uci set firewall.@zone[-1].forward='REJECT'
+					uci set firewall.@zone[-1].masq='1'
+					uci set firewall.@zone[-1].mtu_fix='1'
+					uci add_list firewall.@zone[-1].network='olctun'
+				fi
+
+				# Create forwarding lan -> olc
+				FWD_EXISTS=0
+				idx=0
+				while uci -q get "firewall.@forwarding[$idx]" >/dev/null 2>&1; do
+					fsrc=$(uci -q get "firewall.@forwarding[$idx].src")
+					fdst=$(uci -q get "firewall.@forwarding[$idx].dest")
+					if [ "$fsrc" = "lan" ] && [ "$fdst" = "olc" ]; then
+						FWD_EXISTS=1
+						break
+					fi
+					idx=$((idx + 1))
+				done
+
+				if [ "$FWD_EXISTS" = "0" ]; then
+					uci add firewall forwarding
+					uci set firewall.@forwarding[-1].src='lan'
+					uci set firewall.@forwarding[-1].dest='olc'
+				fi
+
+				uci commit firewall
+
+				/etc/init.d/network reload 2>/dev/null
+				/etc/init.d/firewall restart 2>/dev/null
+
+				json_init
+				json_add_string "result" "ok"
+				json_dump
+			;;
+
+			removeFirewall)
+				# Remove forwarding lan -> olc
+				idx=0
+				while uci -q get "firewall.@forwarding[$idx]" >/dev/null 2>&1; do
+					fsrc=$(uci -q get "firewall.@forwarding[$idx].src")
+					fdst=$(uci -q get "firewall.@forwarding[$idx].dest")
+					if [ "$fsrc" = "lan" ] && [ "$fdst" = "olc" ]; then
+						uci delete "firewall.@forwarding[$idx]"
+						break
+					fi
+					idx=$((idx + 1))
+				done
+
+				# Remove firewall zone 'olc'
+				idx=0
+				while uci -q get "firewall.@zone[$idx]" >/dev/null 2>&1; do
+					zname=$(uci -q get "firewall.@zone[$idx].name")
+					if [ "$zname" = "olc" ]; then
+						uci delete "firewall.@zone[$idx]"
+						break
+					fi
+					idx=$((idx + 1))
+				done
+
+				uci commit firewall
+
+				# Remove network interface
+				uci -q delete network.olctun 2>/dev/null
+				uci commit network
+
+				# Clean routing
+				ip rule del lookup 100 2>/dev/null
+				ip route flush table 100 2>/dev/null
+
+				/etc/init.d/network reload 2>/dev/null
+				/etc/init.d/firewall restart 2>/dev/null
+
+				json_init
+				json_add_string "result" "ok"
+				json_dump
+			;;
+
+			getFirewallStatus)
+				ZONE_OK=0
+				FWD_OK=0
+				NET_OK=0
+
+				# Check network interface
+				uci -q get network.olctun >/dev/null 2>&1 && NET_OK=1
+
+				# Check firewall zone
+				idx=0
+				while uci -q get "firewall.@zone[$idx]" >/dev/null 2>&1; do
+					zname=$(uci -q get "firewall.@zone[$idx].name")
+					[ "$zname" = "olc" ] && ZONE_OK=1 && break
+					idx=$((idx + 1))
+				done
+
+				# Check forwarding
+				idx=0
+				while uci -q get "firewall.@forwarding[$idx]" >/dev/null 2>&1; do
+					fsrc=$(uci -q get "firewall.@forwarding[$idx].src")
+					fdst=$(uci -q get "firewall.@forwarding[$idx].dest")
+					[ "$fsrc" = "lan" ] && [ "$fdst" = "olc" ] && FWD_OK=1 && break
+					idx=$((idx + 1))
+				done
+
+				json_init
+				json_add_boolean "network_ok" "$NET_OK"
+				json_add_boolean "zone_ok" "$ZONE_OK"
+				json_add_boolean "forwarding_ok" "$FWD_OK"
+				if [ "$NET_OK" = "1" ] && [ "$ZONE_OK" = "1" ] && [ "$FWD_OK" = "1" ]; then
+					json_add_boolean "configured" 1
+				else
+					json_add_boolean "configured" 0
+				fi
+				json_dump
+			;;
+		esac
+	;;
+esac

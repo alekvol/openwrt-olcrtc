@@ -19,6 +19,36 @@ OpenWrt feed для запуска [olcRTC](https://github.com/openlibrecommunit
 | `luci-app-olcrtc` | веб-морда LuCI для правки UCI-конфигов |
 | `luci-i18n-olcrtc-ru` | русский перевод LuCI-приложения (собирается автоматически вместе с `luci-app-olcrtc`) |
 
+## Быстрая установка (одной командой)
+
+Подключитесь к роутеру по SSH и выполните:
+
+```sh
+sh -c "$(wget -qO- https://raw.githubusercontent.com/alekvol/openwrt-olcrtc/master/install.sh)"
+```
+
+Скрипт автоматически определит архитектуру и пакетный менеджер, скачает пакеты
+из GitHub Releases и установит все зависимости. После установки откройте
+**LuCI → Службы → olcRTC**.
+
+### Быстрый старт через URI
+
+Если сервер выдал строку подключения вида `olcrtc://…` — вставьте её в поле
+**«Быстрое подключение»** на вкладке Client, все параметры заполнятся сами.
+
+### Подписки
+
+Вставьте `https://…` ссылку на sub.md-файл — появятся карточки серверов,
+клик по карточке применяет настройки одним нажатием.
+
+### Удаление
+
+```sh
+sh -c "$(wget -qO- https://raw.githubusercontent.com/alekvol/openwrt-olcrtc/master/uninstall.sh)"
+```
+
+---
+
 ## Подключение feed
 
 В `feeds.conf.default` или `feeds.conf` корня OpenWrt buildroot:

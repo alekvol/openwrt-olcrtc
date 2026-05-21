@@ -1,7 +1,20 @@
 {
 	"luci-app-olcrtc": {
-		"description": "Grant UCI access for luci-app-olcrtc",
-		"read":  { "uci": [ "olcrtc", "olcrtc-tun" ] },
-		"write": { "uci": [ "olcrtc", "olcrtc-tun" ] }
+		"description": "Grant UCI and system access for luci-app-olcrtc",
+		"read":  {
+			"uci":    [ "olcrtc", "olcrtc-tun", "network", "firewall" ],
+			"ubus":   { "olcrtc": [ "getStatus", "getLogs", "getFirewallStatus" ] },
+			"file":   {
+				"/etc/init.d/olcrtc":      [ "exec" ],
+				"/etc/init.d/olcrtc-tun":  [ "exec" ],
+				"/sbin/logread":           [ "exec" ],
+				"/bin/pidof":              [ "exec" ],
+				"/usr/bin/curl":           [ "exec" ]
+			}
+		},
+		"write": {
+			"uci":    [ "olcrtc", "olcrtc-tun", "network", "firewall" ],
+			"ubus":   { "olcrtc": [ "serviceAction", "setupFirewall", "removeFirewall" ] }
+		}
 	}
 }
